@@ -1,2 +1,2 @@
 Disallow: /index.html
-Disallow: /app/*
+Disallow: /yazakaz/*
