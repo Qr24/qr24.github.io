@@ -1,2 +1,4 @@
 Disallow: /index.html
+Disallow: /README.md
+Disallow: /checkphone/*
 Disallow: /yazakaz/*
