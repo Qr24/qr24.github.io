@@ -1,5 +1,5 @@
 // --- НАСТРОЙКИ ---
-const WAKE_WORDS = ['патрик', 'patrick'];
+const WAKE_WORDS = ['елка','ёлка','патрик', 'patrick'];
 
 // Таймеры (в миллисекундах)
 const WAIT_FOR_START_DELAY = 4000; // Ждем 4 сек, пока вы начнете говорить
@@ -817,7 +817,6 @@ function playAiResponse(url) {
 // --- ЗАПУСК ---
 async function start() {
     try {
-        speak("Слушаю");
         if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
         if (audioContext.state === 'suspended') await audioContext.resume();
 
