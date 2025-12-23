@@ -675,7 +675,7 @@ async function localDo(text) {
     try {
         if (checkText.indexOf('радио') > 0) {
             if (checkText.indexOf('включ') > 0 || checkText.indexOf('запус') > 0 || checkText.indexOf('друг') > 0 || checkText.indexOf('вруб') > 0) {
-                playRadio('next')
+                playRadio(checkText)
             }
             if (checkText.indexOf('выключ') > 0 || checkText.indexOf('стоп') > 0) {
                 stopRadio();
@@ -817,6 +817,7 @@ function playAiResponse(url) {
 // --- ЗАПУСК ---
 async function start() {
     try {
+        speak("Слушаю");
         if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
         if (audioContext.state === 'suspended') await audioContext.resume();
 
@@ -993,3 +994,14 @@ document.addEventListener('DOMContentLoaded', () => {
         el.innerHTML = 'Патрик: ' + htmlContent;
     });
 });
+
+function speak(text) {
+    if (window.speechSynthesis) {
+        const utterance = new SpeechSynthesisUtterance();
+        utterance.text = text;
+        window.speechSynthesis.speak(utterance);
+    }
+    else {
+        console.log("Voice not supported");
+    }
+}
