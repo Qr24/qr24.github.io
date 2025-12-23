@@ -1,5 +1,5 @@
 // --- НАСТРОЙКИ ---
-const WAKE_WORDS = ['елка','ёлка','патрик', 'patrick'];
+const WAKE_WORDS = ['елка', 'ёлка', 'патрик', 'patrick'];
 
 // Таймеры (в миллисекундах)
 const WAIT_FOR_START_DELAY = 4000; // Ждем 4 сек, пока вы начнете говорить
@@ -360,7 +360,7 @@ function playRadio(stationName = null) {
         else {
             radioPlayer.play();
             isRadioPlaying = true;
-            setStatus('Радио играет', 'active');
+            setStatus('Радио играет', 'processing'); //active
             return;
         }
     }
@@ -392,7 +392,7 @@ function playRadio(stationName = null) {
     radioPlayer.volume = userRadioVolume;
     radioPlayer.play().then(() => {
         isRadioPlaying = true;
-        setStatus(`FM: ${station.name}`, 'active');
+        setStatus(`FM: ${station.name}`, 'processing'); //active
     }).catch(e => {
         log('Ошибка радио (HTTP/HTTPS?): ' + e.message, 'error');
     });
@@ -401,6 +401,7 @@ function playRadio(stationName = null) {
 function stopRadio() {
     radioPlayer.pause();
     isRadioPlaying = false;
+    setStatus('Готов.', ''); //active
 }
 
 // Функция приглушения/восстановления радио
