@@ -264,7 +264,7 @@
 
         startBtn.addEventListener('click', async () => {
             if (!audioCtx) {
-                document.getElementById('animated-text').innerText = document.getElementById('stationSelect').innerText;
+                document.getElementById('animated-text').innerText = document.querySelector('#stationSelect option:checked').textContent;
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 audio = new Audio();
                 audio.crossOrigin = "anonymous";
