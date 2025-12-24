@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3D Radio Partner</title>
+    <title>3D Music Visualizer</title>
     <style>
         :root {
             --accent: #00f2ff;
@@ -19,23 +19,22 @@
             overflow: hidden;
             background: #000;
             color: white;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             perspective: 1200px;
-            /* Глубина 3D сцены */
         }
 
-        /* Задний размытый слой */
+        /* Фоновый слой с размытием */
         #bg-layer {
             position: absolute;
-            top: -15%;
-            left: -15%;
-            width: 130%;
-            height: 130%;
+            top: -20%;
+            left: -20%;
+            width: 140%;
+            height: 140%;
             background-size: cover;
             background-position: center;
-            filter: blur(25px) brightness(0.4);
+            filter: blur(40px) brightness(0.3);
             z-index: 0;
-            transition: transform 0.1s ease-out, background-image 0.5s;
+            transition: transform 0.1s ease-out, background-image 0.8s ease-in-out;
         }
 
         #main-container {
@@ -47,33 +46,33 @@
             align-items: center;
             transform-style: preserve-3d;
             z-index: 1;
+            position: relative;
         }
 
-        /* Бегущая строка в 3D пространстве */
+        /* Бегущая строка */
         #text-layer {
             position: absolute;
-            top: 15%;
+            top: 10%;
             width: 100%;
             pointer-events: none;
             z-index: 5;
-            transform: translateZ(120px);
-            /* Вынос вперед */
+            transform: translateZ(150px);
         }
 
         .marquee {
             white-space: nowrap;
             overflow: hidden;
-            font-size: 4rem;
+            font-size: clamp(2rem, 8vw, 5rem);
             font-weight: 900;
-            -webkit-text-stroke: 1px var(--accent);
+            -webkit-text-stroke: 1.5px var(--accent);
             color: transparent;
-            opacity: 0.6;
+            opacity: 0.4;
         }
 
         .marquee span {
             display: inline-block;
             padding-left: 100%;
-            animation: marquee 12s linear infinite;
+            animation: marquee 15s linear infinite;
         }
 
         @keyframes marquee {
@@ -98,38 +97,55 @@
         #ui {
             position: relative;
             z-index: 10;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 25px;
-            border-radius: 30px;
-            backdrop-filter: blur(20px);
+            background: rgba(10, 10, 10, 0.6);
+            padding: 30px;
+            border-radius: 40px;
+            backdrop-filter: blur(25px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
-            transform: translateZ(50px);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            transform: translateZ(80px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
+            max-width: 90%;
         }
 
         .controls select,
         .controls button,
         .file-label {
-            background: #111;
+            background: #1a1a1a;
             color: white;
             border: 1px solid var(--accent);
-            padding: 12px 20px;
-            border-radius: 12px;
-            margin: 8px;
+            padding: 14px 24px;
+            border-radius: 15px;
+            margin: 10px;
             font-size: 0.9rem;
             cursor: pointer;
-            transition: 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .controls button:hover,
+        .file-label:hover {
+            background: var(--accent);
+            color: black;
+            box-shadow: 0 0 20px var(--accent);
         }
 
         button#startBtn {
             background: var(--accent);
             color: black;
             font-weight: bold;
-            width: 150px;
+            min-width: 180px;
         }
 
         input[type="file"] {
+            display: none;
+        }
+
+        #status-msg {
+            font-size: 0.7rem;
+            color: #ff4444;
+            margin-top: 10px;
             display: none;
         }
     </style>
@@ -147,18 +163,19 @@
         <canvas id="visualizer"></canvas>
 
         <div id="ui">
-            <h2 id="title" style="margin-top:0">RADIO PARTNER</h2>
+            <h2 id="title" style="margin-top:0; letter-spacing: 5px;">SONIC ENGINE</h2>
             <div class="controls">
                 <select id="stationSelect">
-                    <option value="https://radiorecord.hostingradio.ru/rr_main96.aacp">Рекорд</option>
-                    <option value="https://radio-holding.ru:9433/marusya_default">Маруся ФМ</option>
-                    <option value="https://pub0201.101.ru:8000/stream/air/aac/64/200">Relax FM</option>
+                    <option value="https://radiorecord.hostingradio.ru/rr_main96.aacp">RECORD RADIO</option>
+                    <option value="https://radio-holding.ru:9433/marusya_default">MARUSYA FM</option>
+                    <option value="https://pub0201.101.ru:8000/stream/air/aac/64/200">RELAX FM</option>
                 </select>
                 <br>
-                <label class="file-label" for="coverInput">📁 ОБЛОЖКА</label>
+                <label class="file-label" for="coverInput">📁 ИЗМЕНИТЬ ФОН</label>
                 <input type="file" id="coverInput" accept="image/*">
                 <button id="startBtn">ЗАПУСК</button>
             </div>
+            <div id="status-msg">Ошибка CORS: Визуализация может не работать с этим потоком.</div>
         </div>
     </div>
 
@@ -169,13 +186,15 @@
         const bgLayer = document.getElementById('bg-layer');
         const container = document.getElementById('main-container');
         const canvas = document.getElementById('visualizer');
+        const statusMsg = document.getElementById('status-msg');
         const ctx = canvas.getContext('2d');
 
         let audioCtx, analyser, source, dataArray, audio;
         let visualMode = 0;
         let isPlaying = false;
+        let animationId;
 
-        // Ресайз канваса
+        // Авто-ресайз
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -190,19 +209,24 @@
             reader.readAsDataURL(e.target.files[0]);
         });
 
-        // Смена режимов
-        setInterval(() => { visualMode = (visualMode + 1) % 3; }, 10000);
+        // Цикл смены режимов
+        setInterval(() => { visualMode = (visualMode + 1) % 3; }, 12000);
 
         startBtn.addEventListener('click', async () => {
+            // Инициализация аудио-стека
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 audio = new Audio();
                 audio.crossOrigin = "anonymous";
+
                 analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 256;
+                analyser.fftSize = 512;
+                analyser.smoothingTimeConstant = 0.8; // Плавность анимации
+
                 source = audioCtx.createMediaElementSource(audio);
                 source.connect(analyser);
                 analyser.connect(audioCtx.destination);
+
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
                 requestOrientation();
             }
@@ -210,38 +234,50 @@
             if (isPlaying) {
                 audio.pause();
                 startBtn.innerText = "ИГРАТЬ";
+                cancelAnimationFrame(animationId);
             } else {
-                audio.src = stationSelect.value;
+                // Если сменили станцию
+                if (audio.src !== stationSelect.value) {
+                    audio.src = stationSelect.value;
+                    audio.load();
+                }
+
                 scrollText.innerText = (stationSelect.options[stationSelect.selectedIndex].text + " • ").repeat(10);
-                audio.play();
-                audioCtx.resume();
-                startBtn.innerText = "ПАУЗА";
-                draw();
+
+                audio.play().then(() => {
+                    audioCtx.resume();
+                    startBtn.innerText = "ПАУЗА";
+                    statusMsg.style.display = 'none';
+                    draw();
+                }).catch(e => {
+                    console.error("CORS Error:", e);
+                    statusMsg.style.display = 'block'; // Показываем ошибку пользователю
+                });
             }
             isPlaying = !isPlaying;
         });
 
         async function requestOrientation() {
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                await DeviceOrientationEvent.requestPermission();
+                try { await DeviceOrientationEvent.requestPermission(); } catch (e) { }
             }
             window.addEventListener('deviceorientation', (e) => {
-                const rZ = e.gamma || 0;
-                const rX = (e.beta - 45) * 0.4 || 0;
+                const rZ = (e.gamma || 0) * 0.4;
+                const rX = (e.beta - 45) * 0.3 || 0;
                 container.style.transform = `rotateZ(${rZ}deg) rotateX(${rX}deg)`;
-                bgLayer.style.transform = `rotateZ(${rZ}deg) rotateX(${rX}deg) scale(1.3)`;
+                bgLayer.style.transform = `translateZ(-50px) rotateZ(${rZ}deg) rotateX(${rX}deg) scale(1.3)`;
             });
         }
 
         function draw() {
-            if (!isPlaying) return;
-            requestAnimationFrame(draw);
+            animationId = requestAnimationFrame(draw);
             analyser.getByteFrequencyData(dataArray);
 
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            // Полупрозрачная очистка для эффекта шлейфа
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const hue = (Date.now() / 50) % 360;
+            const hue = (Date.now() / 60) % 360;
             document.documentElement.style.setProperty('--accent', `hsl(${hue}, 100%, 50%)`);
 
             const centerX = canvas.width / 2;
@@ -251,25 +287,39 @@
                 const val = dataArray[i];
                 const angle = (i / dataArray.length) * Math.PI * 2;
 
-                if (visualMode === 0) { // КОЛЬЦО
-                    ctx.strokeStyle = `hsl(${hue + i}, 100%, 50%)`;
+                // Эффект свечения
+                ctx.shadowBlur = val / 15;
+                ctx.shadowColor = `hsl(${hue + i}, 100%, 50%)`;
+
+                if (visualMode === 0) { // РЕЖИМ 1: Эквалайзер-кольцо
+                    ctx.strokeStyle = `hsl(${hue + (i * 0.5)}, 100%, 50%)`;
                     ctx.lineWidth = 3;
                     ctx.beginPath();
-                    ctx.moveTo(centerX + Math.cos(angle) * 80, centerY + Math.sin(angle) * 80);
-                    ctx.lineTo(centerX + Math.cos(angle) * (80 + val), centerY + Math.sin(angle) * (80 + val));
+                    const rBase = Math.min(canvas.width, canvas.height) * 0.15;
+                    const rEnd = rBase + (val * 0.7);
+                    ctx.moveTo(centerX + Math.cos(angle) * rBase, centerY + Math.sin(angle) * rBase);
+                    ctx.lineTo(centerX + Math.cos(angle) * rEnd, centerY + Math.sin(angle) * rEnd);
                     ctx.stroke();
-                } else if (visualMode === 1) { // ВОЛНЫ
-                    ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.5)`;
-                    ctx.fillRect(i * (canvas.width / dataArray.length), canvas.height, 2, -val * 2);
-                } else { // ИСКРЫ
-                    if (val > 230) {
-                        ctx.fillStyle = "white";
+                }
+                else if (visualMode === 1) { // РЕЖИМ 2: Спектральные волны
+                    const barWidth = (canvas.width / dataArray.length) * 2;
+                    ctx.fillStyle = `hsla(${(hue + i) % 360}, 100%, 50%, 0.6)`;
+                    ctx.fillRect(i * barWidth, canvas.height, barWidth - 2, -val * 2.5);
+                }
+                else { // РЕЖИМ 3: Хаотичные импульсы
+                    if (val > 210) {
+                        ctx.fillStyle = `hsl(${(hue + val) % 360}, 100%, 80%)`;
                         ctx.beginPath();
-                        ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, val / 20, 0, Math.PI * 2);
+                        ctx.arc(
+                            Math.random() * canvas.width,
+                            Math.random() * canvas.height,
+                            val / 12, 0, Math.PI * 2
+                        );
                         ctx.fill();
                     }
                 }
             }
+            ctx.shadowBlur = 0; // Отключаем тень для оптимизации
         }
     </script>
 </body>
