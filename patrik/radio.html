@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonic Core Mobile Edition</title>
+    <title>Sonic Core Final Mobile</title>
     <style>
         :root {
             --accent: #00f2ff;
@@ -19,7 +19,7 @@
             overflow: hidden;
             background: #000;
             color: white;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: sans-serif;
             perspective: 1000px;
         }
 
@@ -30,9 +30,8 @@
             width: 150%;
             height: 150%;
             background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
-            filter: blur(45px) brightness(0.2);
+            filter: blur(40px) brightness(0.2);
             z-index: 0;
-            will-change: transform;
         }
 
         #main-container {
@@ -49,28 +48,27 @@
 
         #text-layer {
             position: absolute;
-            top: 15%;
+            top: 12%;
             width: 100%;
             pointer-events: none;
             z-index: 5;
             display: flex;
             justify-content: center;
-            overflow: hidden;
         }
 
         .text-3d {
-            font-size: clamp(1.5rem, 8vw, 4rem);
+            font-size: clamp(1.2rem, 7vw, 3rem);
             font-weight: 900;
             color: transparent;
-            text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
             -webkit-text-stroke: 1px var(--accent);
+            text-shadow: 0 0 15px var(--accent);
             white-space: nowrap;
-            animation: textFly 12s linear infinite;
+            animation: textFly 10s linear infinite;
         }
 
         @keyframes textFly {
             0% {
-                transform: translateZ(-400px);
+                transform: translateZ(-300px);
                 opacity: 0;
             }
 
@@ -83,7 +81,7 @@
             }
 
             100% {
-                transform: translateZ(400px);
+                transform: translateZ(300px);
                 opacity: 0;
             }
         }
@@ -98,28 +96,27 @@
 
         #ui {
             position: absolute;
-            bottom: 10%;
+            bottom: 8%;
             z-index: 10;
-            background: rgba(10, 10, 10, 0.6);
-            padding: 20px;
-            border-radius: 30px;
+            background: rgba(10, 10, 10, 0.7);
+            padding: 15px;
+            border-radius: 25px;
             backdrop-filter: blur(15px);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 85%;
+            max-width: 320px;
             text-align: center;
-            transform: translateZ(50px);
-            width: 80%;
-            max-width: 300px;
         }
 
         .controls select {
             background: #000;
             color: white;
             border: 1px solid var(--accent);
-            padding: 10px;
-            border-radius: 10px;
+            padding: 12px;
+            border-radius: 12px;
             width: 100%;
-            font-size: 0.9rem;
-            margin-bottom: 15px;
+            font-size: 16px;
+            margin-bottom: 12px;
             outline: none;
         }
 
@@ -127,13 +124,12 @@
             background: var(--accent);
             color: black;
             border: none;
-            padding: 12px 30px;
+            padding: 14px;
             border-radius: 12px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
             width: 100%;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
         }
 
         #mode-info {
@@ -141,10 +137,10 @@
             top: 20px;
             width: 100%;
             text-align: center;
-            font-size: 0.6rem;
-            letter-spacing: 3px;
-            opacity: 0.5;
-            z-index: 10;
+            font-size: 10px;
+            letter-spacing: 4px;
+            color: var(--accent);
+            opacity: 0.6;
         }
     </style>
 </head>
@@ -152,11 +148,11 @@
 <body>
 
     <div id="bg-layer"></div>
-    <div id="mode-info">SYSTEM: STANDBY</div>
+    <div id="mode-info">READY</div>
 
     <div id="main-container">
         <div id="text-layer">
-            <div class="text-3d" id="animated-text">SONIC CORE MOBILE</div>
+            <div class="text-3d" id="animated-text">SONIC ENGINE</div>
         </div>
         <canvas id="visualizer"></canvas>
 
@@ -186,25 +182,7 @@
         let visualMode = 0;
         let isPlaying = false;
         let particles = [];
-        let lastMode = -1;
         const modeNames = ["HYPER-RING", "WAVE-FORM", "STAR-TUNNEL", "MIRROR-CITY", "NEBULA-X", "GRID-FLOW", "SONIC-RIPPLES", "FRACTAL-FLOW"];
-
-        // Интерактив для телефона (акселерометр) и мыши
-        const handleMotion = (x, y) => {
-            const rotY = x * 20;
-            const rotX = -y * 20;
-            container.style.transform = `rotateY(${rotY}deg) rotateX(${rotX}deg)`;
-        };
-
-        window.addEventListener('mousemove', (e) => {
-            handleMotion((e.clientX / window.innerWidth) - 0.5, (e.clientY / window.innerHeight) - 0.5);
-        });
-
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', (e) => {
-                handleMotion(e.gamma / 45, (e.beta - 45) / 45);
-            });
-        }
 
         function resize() {
             canvas.width = window.innerWidth;
@@ -213,15 +191,15 @@
         window.addEventListener('resize', resize);
         resize();
 
-        for (let i = 0; i < 150; i++) {
+        for (let i = 0; i < 100; i++) {
             particles.push({ x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() });
         }
 
-        function switchRandomMode() {
+        function switchMode() {
             if (!isPlaying) return;
-            visualMode = Math.floor(Math.random() * modeNames.length);
-            modeInfo.innerText = `MODE: ${modeNames[visualMode]}`;
-            setTimeout(switchRandomMode, 10000);
+            visualMode = (visualMode + 1) % modeNames.length;
+            modeInfo.innerText = "MODE: " + modeNames[visualMode];
+            setTimeout(switchMode, 8000); // Смена каждые 8 секунд
         }
 
         startBtn.addEventListener('click', async () => {
@@ -230,7 +208,8 @@
                 audio = new Audio();
                 audio.crossOrigin = "anonymous";
                 analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 256; // Меньше FFT для производительности на мобильных
+                analyser.fftSize = 512;
+                analyser.smoothingTimeConstant = 0.8;
                 const source = audioCtx.createMediaElementSource(audio);
                 source.connect(analyser);
                 analyser.connect(audioCtx.destination);
@@ -240,17 +219,17 @@
             if (isPlaying) {
                 audio.pause();
                 startBtn.innerText = "ЗАПУСК";
+                isPlaying = false;
             } else {
                 audio.src = stationSelect.value;
                 audio.play().then(() => {
                     audioCtx.resume();
                     startBtn.innerText = "ПАУЗА";
                     isPlaying = true;
-                    switchRandomMode();
+                    switchMode();
                     draw();
                 });
             }
-            isPlaying = !isPlaying;
         });
 
         function draw() {
@@ -260,45 +239,72 @@
 
             let bass = dataArray[0] + dataArray[1] + dataArray[2];
             let bassLevel = bass / 765;
-
-            bgLayer.style.transform = `scale(${1.1 + bassLevel * 0.2})`;
-            ctx.fillStyle = `rgba(0, 0, 0, 0.2)`;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            const hue = (Date.now() / 60) % 360;
-            document.documentElement.style.setProperty('--accent', `hsl(${hue}, 100%, 50%)`);
-            animatedText.style.webkitTextStrokeColor = `hsl(${hue}, 100%, 50%)`;
-
+            const hue = (Date.now() / 50) % 360;
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
 
+            document.documentElement.style.setProperty('--accent', `hsl(${hue}, 100%, 50%)`);
+            bgLayer.style.transform = `scale(${1.1 + bassLevel * 0.2})`;
+
+            ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // --- ОБРАБОТКА ВСЕХ РЕЖИМОВ ---
             if (visualMode === 0) { // RING
-                for (let i = 0; i < dataArray.length; i++) {
+                for (let i = 0; i < dataArray.length; i += 2) {
                     let angle = (i / dataArray.length) * Math.PI * 2;
                     ctx.strokeStyle = `hsl(${hue + i}, 100%, 50%)`;
                     ctx.beginPath();
-                    let r1 = 100 + bassLevel * 30;
-                    let r2 = r1 + dataArray[i] * 0.8;
+                    let r1 = 100 + bassLevel * 40;
+                    let r2 = r1 + dataArray[i] * 0.7;
                     ctx.moveTo(centerX + Math.cos(angle) * r1, centerY + Math.sin(angle) * r1);
                     ctx.lineTo(centerX + Math.cos(angle) * r2, centerY + Math.sin(angle) * r2);
                     ctx.stroke();
                 }
-            } else if (visualMode === 2) { // TUNNEL
+            }
+            else if (visualMode === 1) { // WAVE
+                ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+                ctx.beginPath();
+                for (let i = 0; i < dataArray.length; i++) {
+                    let x = (i / dataArray.length) * canvas.width;
+                    let y = centerY + (dataArray[i] - 128) * 2;
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+            else if (visualMode === 2) { // TUNNEL
                 particles.forEach(p => {
                     p.z -= 0.01 + bassLevel * 0.05;
                     if (p.z <= 0) p.z = 1;
                     let x = p.x / p.z * centerX + centerX;
                     let y = p.y / p.z * centerY + centerY;
-                    ctx.fillStyle = `hsla(${hue}, 100%, 70%, ${1 - p.z})`;
+                    ctx.fillStyle = `hsla(${hue}, 100%, 75%, ${1 - p.z})`;
                     ctx.beginPath();
-                    ctx.arc(x, y, (1 - p.z) * 5, 0, Math.PI * 2);
+                    ctx.arc(x, y, (1 - p.z) * 6, 0, Math.PI * 2);
                     ctx.fill();
                 });
-            } else { // SIMPLE BARS (Default for mobile speed)
-                let barW = canvas.width / dataArray.length;
+            }
+            else if (visualMode === 3) { // CITY
+                let barW = (canvas.width / dataArray.length) * 2;
                 for (let i = 0; i < dataArray.length; i++) {
                     ctx.fillStyle = `hsl(${hue + i}, 100%, 50%)`;
-                    ctx.fillRect(i * barW, canvas.height, barW - 1, -dataArray[i] * 2);
+                    ctx.fillRect(i * barW, canvas.height, barW - 1, -dataArray[i] * 2.5);
+                }
+            }
+            else if (visualMode === 6) { // RIPPLES
+                for (let i = 0; i < dataArray.length; i += 10) {
+                    ctx.strokeStyle = `hsla(${hue + i}, 100%, 50%, ${dataArray[i] / 255})`;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, dataArray[i] * 1.5, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+            else { // DEFAULT BARS для остальных режимов
+                let barW = canvas.width / 40;
+                for (let i = 0; i < 40; i++) {
+                    ctx.fillStyle = `hsl(${hue + i * 5}, 100%, 50%)`;
+                    let h = dataArray[i * 2] * 1.5;
+                    ctx.fillRect(i * barW * 2, centerY - h / 2, barW, h);
                 }
             }
         }
