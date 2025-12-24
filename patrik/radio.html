@@ -164,7 +164,7 @@
 
     <div id="main-container">
         <div id="text-layer">
-            <div class="text-3d" id="animated-text">SONIC ENGINE</div>
+            <div class="text-3d" id="animated-text">Включи радио</div>
         </div>
         <canvas id="visualizer"></canvas>
 
@@ -264,7 +264,6 @@
 
         startBtn.addEventListener('click', async () => {
             if (!audioCtx) {
-                document.getElementById('animated-text').innerText = document.querySelector('#stationSelect option:checked').textContent;
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 audio = new Audio();
                 audio.crossOrigin = "anonymous";
@@ -285,6 +284,7 @@
                 audio.play().then(() => {
                     audioCtx.resume();
                     startBtn.innerText = "ПАУЗА";
+                    document.getElementById('animated-text').innerText = document.querySelector('#stationSelect option:checked').textContent;
                     isPlaying = true;
                     autoSwitch(); // Запуск цикла случайной смены
                     draw();
