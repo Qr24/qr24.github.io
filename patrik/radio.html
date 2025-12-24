@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Interactive 3D Sonic Engine</title>
+    <title>Ultimate Foggy Random Interactive 3D Visualizer</title>
     <style>
         :root {
             --accent: #00f2ff;
@@ -31,7 +31,7 @@
             height: 150%;
             background-size: cover;
             background-position: center;
-            filter: blur(45px) brightness(0.25);
+            filter: blur(45px) brightness(0.2);
             z-index: 0;
             transition: background-image 1s ease;
             will-change: transform;
@@ -48,6 +48,53 @@
             z-index: 1;
             position: relative;
             transition: transform 0.1s ease-out;
+        }
+
+        /* Новый стиль для 3D текста */
+        #text-layer {
+            position: absolute;
+            top: 10%;
+            width: 100%;
+            pointer-events: none;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .text-3d {
+            font-size: clamp(2rem, 10vw, 6rem);
+            font-weight: 900;
+            color: transparent;
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.7), 0 0 20px rgba(0, 242, 255, 0.5);
+            -webkit-text-stroke: 1.5px var(--accent);
+            white-space: nowrap;
+            animation: textFly 15s linear infinite;
+            transform-origin: 50% 50% 0;
+            /* Центр вращения */
+            will-change: transform, color, text-shadow;
+        }
+
+        @keyframes textFly {
+            0% {
+                transform: translateZ(-500px) rotateY(0deg);
+                opacity: 0;
+            }
+
+            10% {
+                transform: translateZ(-200px) rotateY(0deg);
+                opacity: 1;
+            }
+
+            90% {
+                transform: translateZ(200px) rotateY(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateZ(500px) rotateY(0deg);
+                opacity: 0;
+            }
         }
 
         canvas {
@@ -118,13 +165,16 @@
     <div id="mode-info">SYSTEM: STANDBY</div>
 
     <div id="main-container">
+        <div id="text-layer">
+            <div class="text-3d" id="animated-text">SONIC CORE SYSTEM</div>
+        </div>
         <canvas id="visualizer"></canvas>
 
         <div id="ui">
-            <h2 style="margin:0 0 20px 0; letter-spacing: 6px; font-weight: 300;">SONIC CORE v2</h2>
+            <h2 style="margin:0 0 20px 0; letter-spacing: 6px; font-weight: 300;">SONIC CORE v4</h2>
             <div class="controls">
                 <select id="stationSelect">
-                    <option value="https://radiorecord.hostingradio.ru/rr_main96.aacp">Radio Record</option>
+                    <option value="https://radiorecord.hostingradio.ru/rr_main96.aacp">Record Radio</option>
                     <option value="https://radio-holding.ru:9433/marusya_default">Маруся ФМ</option>
                     <option value="https://pub0201.101.ru:8000/stream/air/aac/64/200">Relax FM</option>
                 </select>
@@ -143,6 +193,7 @@
         const container = document.getElementById('main-container');
         const canvas = document.getElementById('visualizer');
         const modeInfo = document.getElementById('mode-info');
+        const animatedText = document.getElementById('animated-text');
         const ctx = canvas.getContext('2d');
 
         let audioCtx, analyser, dataArray, audio;
@@ -150,19 +201,19 @@
         let isPlaying = false;
         let particles = [];
         let mouseX = 0, mouseY = 0;
-        const modeNames = ["HYPER-RING", "WAVE-FORM", "STAR-TUNNEL", "MIRROR-CITY", "NEBULA-X"];
+        let lastMode = -1;
+        const modeNames = ["HYPER-RING", "WAVE-FORM", "STAR-TUNNEL", "MIRROR-CITY", "NEBULA-X", "GRID-FLOW", "SONIC-RIPPLES", "FRACTAL-FLOW"];
 
-        // Слежение за мышью
+        // Слежение за мышью для 3D наклона
         window.addEventListener('mousemove', (e) => {
             mouseX = (e.clientX / window.innerWidth) - 0.5;
             mouseY = (e.clientY / window.innerHeight) - 0.5;
-
-            // Наклон всей сцены
-            const rotY = mouseX * 25; // поворот по горизонтали
-            const rotX = -mouseY * 25; // поворот по вертикали
+            const rotY = mouseX * 25;
+            const rotX = -mouseY * 25;
             container.style.transform = `rotateY(${rotY}deg) rotateX(${rotX}deg)`;
         });
 
+        // Отзывчивый размер канваса
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -170,23 +221,34 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // Инициализация 3D частиц
+        // Инициализация 3D частиц для STAR-TUNNEL
         for (let i = 0; i < 200; i++) {
             particles.push({ x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random(), o: Math.random() });
         }
 
+        // Загрузка пользовательской обложки
         document.getElementById('coverInput').addEventListener('change', (e) => {
             const reader = new FileReader();
             reader.onload = (ev) => bgLayer.style.backgroundImage = `url(${ev.target.result})`;
             reader.readAsDataURL(e.target.files[0]);
         });
 
-        setInterval(() => {
+        // --- Функция случайного переключения режимов ---
+        function switchRandomMode() {
             if (!isPlaying) return;
-            visualMode = (visualMode + 1) % 5;
+            let newMode = Math.floor(Math.random() * modeNames.length);
+            while (newMode === lastMode) { // Избегаем повтора последнего режима
+                newMode = Math.floor(Math.random() * modeNames.length);
+            }
+            visualMode = newMode;
+            lastMode = newMode;
             modeInfo.innerText = `MODE: ${modeNames[visualMode]}`;
-        }, 10000);
+            // Устанавливаем следующую случайную задержку
+            const nextDelay = 8000 + Math.random() * 4000; // От 8 до 12 секунд
+            setTimeout(switchRandomMode, nextDelay);
+        }
 
+        // Кнопка ЗАПУСК / ПАУЗА
         startBtn.addEventListener('click', async () => {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -204,16 +266,18 @@
             if (isPlaying) {
                 audio.pause();
                 startBtn.innerText = "ЗАПУСК";
+                isPlaying = false;
             } else {
                 if (audio.src !== stationSelect.value) audio.src = stationSelect.value;
                 audio.play().then(() => {
                     audioCtx.resume();
                     startBtn.innerText = "ПАУЗА";
-                    modeInfo.innerText = `MODE: ${modeNames[visualMode]}`;
+                    isPlaying = true;
+                    // Запускаем первый случайный режим и таймер
+                    switchRandomMode();
                     draw();
                 });
             }
-            isPlaying = !isPlaying;
         });
 
         function draw() {
@@ -224,22 +288,32 @@
             let bass = dataArray.slice(0, 12).reduce((a, b) => a + b) / 12;
             let bassLevel = bass / 255;
 
-            // Эффект баса на фон
+            // Эффекты на фон, зависящие от баса и мыши
             bgLayer.style.transform = `scale(${1.2 + bassLevel * 0.35}) translate(${mouseX * -50}px, ${mouseY * -50}px)`;
 
-            // Хроматическая аберрация (глюк при басе)
+            // Хроматическая аберрация (эффект "глюка")
             if (bassLevel > 0.7) {
                 container.style.filter = `contrast(1.2) saturate(1.5) drop-shadow(${bassLevel * 10}px 0px red) drop-shadow(-${bassLevel * 10}px 0px blue)`;
             } else {
                 container.style.filter = `contrast(1) saturate(1)`;
             }
 
-            ctx.fillStyle = `rgba(0, 0, 0, ${visualMode === 2 ? 0.4 : 0.2})`;
+            // --- Эффект тумана (имитация на канвасе) ---
+            // Туман будет более плотным при сильных басах
+            const fogDensity = 0.05 + bassLevel * 0.1;
+            ctx.fillStyle = `rgba(0, 0, 0, ${visualMode === 2 ? 0.4 : 0.2 + fogDensity})`;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             const hue = (Date.now() / 60) % 360;
+            document.documentElement.style.setProperty('--accent', `hsl(${hue}, 100%, 50%)`);
+            // Анимация цвета 3D текста
+            animatedText.style.textShadow = `0 0 10px hsla(${hue}, 100%, 50%,0.7), 0 0 20px hsla(${hue + 30}, 100%, 50%,0.5)`;
+            animatedText.style.webkitTextStrokeColor = `hsl(${hue}, 100%, 50%)`;
+
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
+
+            ctx.shadowBlur = 0; // Сброс тени по умолчанию
 
             if (visualMode === 0) { // HYPER-RING
                 for (let i = 0; i < dataArray.length; i += 2) {
@@ -254,7 +328,7 @@
                     ctx.lineTo(centerX + Math.cos(angle) * r2, centerY + Math.sin(angle) * r2);
                     ctx.stroke();
                 }
-            } else if (visualMode === 1) { // WAVE-FORM (с центром управления за мышью)
+            } else if (visualMode === 1) { // WAVE-FORM
                 ctx.beginPath();
                 ctx.lineWidth = 3;
                 ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
@@ -264,20 +338,21 @@
                     i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
                 }
                 ctx.stroke();
-            } else if (visualMode === 2) { // STAR-TUNNEL (зависящий от мыши)
+            } else if (visualMode === 2) { // STAR-TUNNEL (3D частицы)
                 particles.forEach(p => {
                     p.z -= 0.008 + (bassLevel * 0.06);
                     if (p.z <= 0) p.z = 1;
-                    // Смещение фокуса тоннеля за мышкой
                     let x = (p.x + mouseX * 0.5) / p.z * centerX + centerX;
                     let y = (p.y + mouseY * 0.5) / p.z * centerY + centerY;
                     let s = (1 - p.z) * 8 * (bassLevel + 0.5);
-                    ctx.fillStyle = `hsla(${hue + p.z * 100}, 100%, 80%, ${1 - p.z})`;
+                    // Эффект тумана для частиц: чем дальше, тем прозрачнее
+                    let alpha = (1 - p.z) - fogDensity;
+                    ctx.fillStyle = `hsla(${hue + p.z * 100}, 100%, 80%, ${alpha > 0 ? alpha : 0})`;
                     ctx.beginPath();
                     ctx.arc(x, y, s, 0, Math.PI * 2);
                     ctx.fill();
                 });
-            } else if (visualMode === 3) { // MIRROR-CITY (3D башни)
+            } else if (visualMode === 3) { // MIRROR-CITY (Башни)
                 let barW = (canvas.width / dataArray.length) * 2;
                 for (let i = 0; i < dataArray.length; i++) {
                     let h = dataArray[i] * 2;
@@ -287,12 +362,61 @@
                     ctx.fillRect(i * barW, 0, barW - 2, h);
                     ctx.fillRect(i * barW, canvas.height, barW - 2, -h);
                 }
-            } else if (visualMode === 4) { // NEBULA-X (облака энергии)
+            } else if (visualMode === 4) { // NEBULA-X (Энергетические облака)
                 for (let i = 0; i < 30; i++) {
                     let val = dataArray[i * 4];
                     ctx.fillStyle = `hsla(${(hue + i * 15) % 360}, 100%, 50%, 0.05)`;
                     ctx.beginPath();
                     ctx.arc(centerX + (mouseX * 200), centerY + (mouseY * 200), val * 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else if (visualMode === 5) { // GRID-FLOW (Энергетическая сетка)
+                const gridSize = 15;
+                const cellW = canvas.width / gridSize;
+                const cellH = canvas.height / gridSize;
+                for (let x = 0; x < gridSize; x++) {
+                    for (let y = 0; y < gridSize; y++) {
+                        const i = Math.floor((x + y / gridSize) * (dataArray.length / gridSize));
+                        const val = dataArray[i] || 0;
+                        const opacity = (val / 255 * 0.4) - fogDensity; // Туман для сетки
+                        ctx.strokeStyle = `hsla(${hue + val}, 100%, 70%, ${opacity > 0 ? opacity : 0})`;
+                        ctx.lineWidth = 1 + bassLevel * 2;
+                        ctx.beginPath();
+                        ctx.rect(x * cellW, y * cellH, cellW, cellH);
+                        ctx.stroke();
+                    }
+                }
+            } else if (visualMode === 6) { // SONIC-RIPPLES (Звуковые волны)
+                for (let i = 0; i < dataArray.length; i += 5) {
+                    const val = dataArray[i];
+                    const radius = (val / 255) * (Math.min(canvas.width, canvas.height) / 2) * 0.8;
+                    // Туман для волн
+                    ctx.strokeStyle = `hsla(${hue + i}, 100%, 60%, ${(val / 255) - fogDensity > 0 ? (val / 255) - fogDensity : 0})`;
+                    ctx.lineWidth = 2 + bassLevel * 3;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius + (bassLevel * 50), 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+            // --- Новый режим: Фрактальный поток ---
+            else if (visualMode === 7) {
+                const scale = 0.01 + bassLevel * 0.05;
+                const rotation = Date.now() * 0.0001;
+                const offset = { x: mouseX * 50, y: mouseY * 50 };
+
+                for (let i = 0; i < 50; i++) {
+                    const val = dataArray[i * 5];
+                    const size = val * 0.5 + 10;
+                    ctx.fillStyle = `hsla(${hue + i * 10}, 100%, 70%, ${(val / 255) * 0.2 - fogDensity})`;
+                    ctx.beginPath();
+                    ctx.moveTo(centerX + offset.x, centerY + offset.y);
+                    for (let j = 0; j < 5; j++) {
+                        const angle = rotation + j * Math.PI * 2 / 5;
+                        const x = centerX + offset.x + Math.cos(angle) * size * (1 + bassLevel * 2);
+                        const y = centerY + offset.y + Math.sin(angle) * size * (1 + bassLevel * 2);
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
                     ctx.fill();
                 }
             }
