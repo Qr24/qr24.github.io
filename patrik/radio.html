@@ -262,6 +262,18 @@
             if (isPlaying) changeVisualMode();
         });
 
+        stationSelect.addEventListener('change', () => {
+            audio.src = stationSelect.value;
+            audio.play().then(() => {
+                audioCtx.resume();
+                startBtn.innerText = "ПАУЗА";
+                document.getElementById('animated-text').innerText = document.querySelector('#stationSelect option:checked').textContent;
+                isPlaying = true;
+                autoSwitch(); // Запуск цикла случайной смены
+                draw();
+            });
+        });
+
         startBtn.addEventListener('click', async () => {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();

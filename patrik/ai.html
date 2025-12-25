@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Gemma 3:1B Demo</title>
+</head>
+
+<body>
+    <textarea id="input" placeholder="Введите запрос..." rows="4" cols="50"></textarea>
+    <button onclick="generate()">Сгенерировать</button>
+    <div id="output"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@huggingface/transformers"></script>
+    <script>
+        async function generate() {
+            const input = document.getElementById('input').value;
+            const output = document.getElementById('output');
+
+            output.innerHTML = "Генерация...";
+
+            try {
+                // Загрузка модели (в продакшене нужен хостинг модели)
+                const { pipeline } = await transformers;
+
+                // Создание пайплайна для текстовой генерации
+                const generator = await pipeline(
+                    'text-generation',
+                    'google/gemma-3-1b-it' // или другая версия Gemma 3:1B
+                );
+
+                // Генерация ответа
+                const result = await generator(input, {
+                    max_new_tokens: 100,
+                    temperature: 0.7,
+                });
+
+                output.innerHTML = result[0].generated_text;
+            } catch (error) {
+                output.innerHTML = "Ошибка: " + error.message;
+            }
+        }
+    </script>
+</body>
+
+</html>
