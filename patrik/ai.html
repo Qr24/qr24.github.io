@@ -3,41 +3,67 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Gemma 3:1B Demo</title>
+    <title>Gemma 3:1B Demo - Простой вариант</title>
 </head>
 
 <body>
-    <textarea id="input" placeholder="Введите запрос..." rows="4" cols="50"></textarea>
-    <button onclick="generate()">Сгенерировать</button>
-    <div id="output"></div>
+    <h1>Gemma 3:1B через Hugging Face API</h1>
 
-    <script src="https://cdn.jsdelivr.net/npm/@huggingface/transformers"></script>
+    <textarea id="input" placeholder="Введите запрос..." rows="4" cols="50"></textarea><br>
+    <button onclick="generate()">Сгенерировать</button>
+
+    <h3>Ответ:</h3>
+    <div id="output" style="border: 1px solid #ccc; padding: 10px; min-height: 100px;"></div>
+
     <script>
+        // Используем Hugging Face Inference API
         async function generate() {
             const input = document.getElementById('input').value;
             const output = document.getElementById('output');
 
+            if (!input.trim()) {
+                output.innerHTML = "Пожалуйста, введите запрос";
+                return;
+            }
+
             output.innerHTML = "Генерация...";
 
             try {
-                // Загрузка модели (в продакшене нужен хостинг модели)
-                const { pipeline } = await transformers;
+                // Ваш API ключ от Hugging Face (получите на huggingface.co/settings/tokens)
+                const HF_TOKEN = "YOUR_HF_TOKEN_HERE"; // Замените на ваш токен
 
-                // Создание пайплайна для текстовой генерации
-                const generator = await pipeline(
-                    'text-generation',
-                    'google/gemma-3-1b-it' // или другая версия Gemma 3:1B
+                const response = await fetch(
+                    "https://api-inference.huggingface.co/models/google/gemma-3-1b-it",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${HF_TOKEN}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            inputs: input,
+                            parameters: {
+                                max_new_tokens: 100,
+                                temperature: 0.7,
+                                top_p: 0.9
+                            }
+                        })
+                    }
                 );
 
-                // Генерация ответа
-                const result = await generator(input, {
-                    max_new_tokens: 100,
-                    temperature: 0.7,
-                });
+                const data = await response.json();
 
-                output.innerHTML = result[0].generated_text;
+                if (data.error) {
+                    output.innerHTML = "Ошибка: " + data.error;
+                } else if (data[0] && data[0].generated_text) {
+                    output.innerHTML = data[0].generated_text;
+                } else {
+                    output.innerHTML = "Не удалось получить ответ";
+                }
+
             } catch (error) {
-                output.innerHTML = "Ошибка: " + error.message;
+                output.innerHTML = "Ошибка подключения: " + error.message;
+                console.error(error);
             }
         }
     </script>
