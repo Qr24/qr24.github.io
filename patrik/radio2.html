@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Слушаем интернет радио с визуальными эффектами.</title>
+    <style>
+        :root {
+            --accent: #00f2ff;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            color: white;
+            font-family: sans-serif;
+            perspective: 1000px;
+        }
+
+        #bg-layer {
+            position: absolute;
+            top: -25%;
+            left: -25%;
+            width: 150%;
+            height: 150%;
+            background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
+            filter: blur(40px) brightness(0.2);
+            z-index: 0;
+        }
+
+        #main-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transform-style: preserve-3d;
+            z-index: 1;
+            position: relative;
+        }
+
+        #text-layer {
+            position: absolute;
+            top: 12%;
+            width: 100%;
+            pointer-events: none;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+        }
+
+        .text-3d {
+            font-size: clamp(1.2rem, 7vw, 3rem);
+            font-weight: 900;
+            color: transparent;
+            -webkit-text-stroke: 1px var(--accent);
+            text-shadow: 0 0 15px var(--accent);
+            white-space: nowrap;
+            animation: textFly 10s linear infinite;
+        }
+
+        @keyframes textFly {
+            0% {
+                transform: translateZ(-300px);
+                opacity: 0;
+            }
+
+            20% {
+                opacity: 1;
+            }
+
+            80% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateZ(300px);
+                opacity: 0;
+            }
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        #ui {
+            position: absolute;
+            bottom: 8%;
+            z-index: 10;
+            background: rgba(10, 10, 10, 0.7);
+            padding: 15px;
+            border-radius: 25px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 85%;
+            max-width: 320px;
+            text-align: center;
+        }
+
+        .controls select {
+            background: #000;
+            color: white;
+            border: 1px solid var(--accent);
+            padding: 12px;
+            border-radius: 12px;
+            width: 100%;
+            font-size: 16px;
+            margin-bottom: 12px;
+            outline: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .controls button {
+            background: var(--accent);
+            color: black;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            width: 100%;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        #nextBtn {
+            background: #222;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+
+        #mode-info {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 10px;
+            letter-spacing: 4px;
+            color: var(--accent);
+            opacity: 0.6;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="bg-layer"></div>
+    <div id="mode-info">Приятного прослушивания!</div>
+
+    <div id="main-container">
+        <div id="text-layer">
+            <div class="text-3d" id="animated-text">Включи радио</div>
+        </div>
+        <canvas id="visualizer"></canvas>
+
+        <div id="ui">
+            <div class="controls">
+                <select id="stationSelect">
+                    <option value="https://radiorecord.hostingradio.ru/rr_main96.aacp">Record Radio</option>
+                    <option value="https://radio-holding.ru:9433/marusya_default">Маруся ФМ</option>
+                    <option value="https://nashe5.hostingradio.ru/nashe-128.mp3">Наше Радио</option>
+                    <option value="https://icecast-vgtrk.cdnvideo.ru/vestifm_mp3_192kbps">Вести ФМ</option>
+                    <option value="https://icecast-vgtrk.cdnvideo.ru/mayakfm_mp3_192kbps">Маяк</option>
+                    <option value="https://dfm.hostingradio.ru/dfm128.mp3">DFM</option>
+                    <option value="https://icecast-vgtrk.cdnvideo.ru/rrzonam_mp3_192kbps">Радио России</option>
+                    <option value="https://kpradio.hostingradio.ru:8000/128?radiostatistica=top-radio.ru">Комсомольская
+                        правда</option>
+                    <option value="https://maximum.hostingradio.ru/maximum128.mp3">Максимум</option>
+                    <option value="https://pub0101.101.ru:8000/stream/air/aac/64/99">NRJ</option>
+                    <option value="https://pub0201.101.ru:8000/stream/air/aac/64/200">Relax FM</option>
+                    <option value="https://bookradio.hostingradio.ru:8069/fm">Книга</option>
+                    <option value="https://nashe1.hostingradio.ru:18000/ultra-128.mp3">Ultra</option>
+                    <option value="https://nashe1.hostingradio.ru/jazz-128.mp3">Jazz</option>
+                    <option value="https://tntradio.hostingradio.ru:8027/tntradio128.mp3">ТНТ</option>
+                    <option value="https://radio.promodj.com/vata-192">Вата</option>
+                    <option value="https://retro.volna.top/Retro">Ретро Хит</option>
+                    <option value="https://remixfm.volna.top/RemixFM">Ремикс ФМ</option>
+                    <option value="https://cafe.volna.top/Cafe">Радио Cafe</option>
+                    <option value="https://air.volna.top/RusRock">Русский рок</option>
+                    <option value="https://stream.mixadance.fm/mixadance">Mixadance</option>
+                    <option value="https://stream.zeno.fm/d2acdq2w908uv">Монстры рока СССР</option>
+                    <option value="https://stream.ndhradio.online:8035/stream">NOH FM</option>
+                    <option value="https://listen2.rpfm.ru/premium128">Радио Премиум</option>
+                    <option value="https://stream.laut.fm/glamwave">Гламурная волна</option>
+                    <option value="https://nashe1.hostingradio.ru/nashepunks.mp3">Панки Хой</option>
+                    <option value="https://hfm.volna.top/HypeFM">ХАЙП ФМ</option>
+                    <option value="https://pub0101.101.ru:8000/stream/air/aac/64/100">Русское Радио</option>
+                </select>
+                <div class="btn-group">
+                    <button id="startBtn">ЗАПУСК</button>
+                    <button id="nextBtn">СЛЕД. РЕЖИМ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const stationSelect = document.getElementById('stationSelect');
+        const bgLayer = document.getElementById('bg-layer');
+        const container = document.getElementById('main-container');
+        const canvas = document.getElementById('visualizer');
+        const modeInfo = document.getElementById('mode-info');
+        const animatedText = document.getElementById('animated-text');
+        const ctx = canvas.getContext('2d');
+
+        let audioCtx, analyser, dataArray, audio;
+        let visualMode = 0;
+        let isPlaying = false;
+        let particles = [];
+        let visualizers = [];
+
+        // Все доступные визуализации
+        const modeNames = [
+            "HYPER-RING", "WAVE-FORM", "STAR-TUNNEL", "MIRROR-CITY", "NEBULA-X",
+            "GRID-FLOW", "SONIC-RIPPLES", "FRACTAL-FLOW", "PARTICLE-DANCE", "CIRCLE-PULSE",
+            "SPECTRUM-SPIRAL", "ENERGY-ORBS", "NEON-BARS", "GEOMETRIC-BLOOM", "COSMIC-RAYS",
+            "WAVE-SPHERE", "DIGITAL-RAIN", "LIQUID-METAL", "CYBER-CIRCUITS", "STARFIELD-SHOCK"
+        ];
+
+        // Инициализация частиц для разных режимов
+        function initParticles(count, type = 'tunnel') {
+            particles = [];
+            for (let i = 0; i < count; i++) {
+                let particle = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, size: 0, life: 1 };
+
+                if (type === 'tunnel') {
+                    particle.x = Math.random() * 2 - 1;
+                    particle.y = Math.random() * 2 - 1;
+                    particle.z = Math.random();
+                } else if (type === 'nebula') {
+                    particle.x = Math.random() * canvas.width;
+                    particle.y = Math.random() * canvas.height;
+                    particle.vx = (Math.random() - 0.5) * 2;
+                    particle.vy = (Math.random() - 0.5) * 2;
+                    particle.size = Math.random() * 5 + 1;
+                } else if (type === 'dance') {
+                    particle.x = canvas.width / 2;
+                    particle.y = canvas.height / 2;
+                    particle.vx = (Math.random() - 0.5) * 4;
+                    particle.vy = (Math.random() - 0.5) * 4;
+                    particle.size = Math.random() * 8 + 2;
+                    particle.life = Math.random() * 0.5 + 0.5;
+                } else if (type === 'starfield') {
+                    particle.x = Math.random() * canvas.width;
+                    particle.y = Math.random() * canvas.height;
+                    particle.vx = (Math.random() - 0.5) * 10;
+                    particle.vy = (Math.random() - 0.5) * 10;
+                    particle.size = Math.random() * 4 + 1;
+                }
+
+                particles.push(particle);
+            }
+        }
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Инициализация начальных частиц
+        initParticles(200, 'tunnel');
+
+        // --- ВИЗУАЛИЗАЦИИ ---
+        const visualEffects = {
+            // 0. HYPER-RING (существующий)
+            0: function (hue, bassLevel, centerX, centerY) {
+                for (let i = 0; i < dataArray.length; i += 4) {
+                    let angle = (i / dataArray.length) * Math.PI * 2;
+                    ctx.strokeStyle = `hsl(${hue + i}, 100%, 50%)`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    let r1 = 80 + bassLevel * 50;
+                    let r2 = r1 + dataArray[i] * 0.8;
+                    ctx.moveTo(centerX + Math.cos(angle) * r1, centerY + Math.sin(angle) * r1);
+                    ctx.lineTo(centerX + Math.cos(angle) * r2, centerY + Math.sin(angle) * r2);
+                    ctx.stroke();
+                }
+            },
+
+            // 1. WAVE-FORM (существующий)
+            1: function (hue, bassLevel, centerX, centerY) {
+                ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                for (let i = 0; i < dataArray.length; i++) {
+                    let x = (i / dataArray.length) * canvas.width;
+                    let y = centerY + (dataArray[i] - 128) * 2.5;
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            },
+
+            // 2. STAR-TUNNEL (существующий)
+            2: function (hue, bassLevel, centerX, centerY) {
+                particles.forEach(p => {
+                    p.z -= 0.01 + bassLevel * 0.06;
+                    if (p.z <= 0) p.z = 1;
+                    let x = p.x / p.z * centerX + centerX;
+                    let y = p.y / p.z * centerY + centerY;
+                    ctx.fillStyle = `hsla(${hue}, 100%, 75%, ${1 - p.z})`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, (1 - p.z) * 10, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            },
+
+            // 3. PARTICLE-DANCE (новый)
+            3: function (hue, bassLevel, centerX, centerY) {
+                initParticles(150, 'dance');
+                particles.forEach(p => {
+                    p.x += p.vx * bassLevel;
+                    p.y += p.vy * bassLevel;
+                    p.life -= 0.005;
+
+                    if (p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height || p.life <= 0) {
+                        p.x = centerX;
+                        p.y = centerY;
+                        p.vx = (Math.random() - 0.5) * 8;
+                        p.vy = (Math.random() - 0.5) * 8;
+                        p.life = 1;
+                    }
+
+                    ctx.fillStyle = `hsla(${hue + p.x / 10}, 100%, 60%, ${p.life})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * bassLevel, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            },
+
+            // 4. CIRCLE-PULSE (новый)
+            4: function (hue, bassLevel, centerX, centerY) {
+                const maxRadius = Math.min(centerX, centerY) * 0.8;
+
+                for (let i = 0; i < 8; i++) {
+                    let radius = (maxRadius * (i / 8)) + (dataArray[i * 4] * bassLevel * 2);
+                    let opacity = 0.3 + (dataArray[i * 8] / 255) * 0.7;
+
+                    ctx.strokeStyle = `hsla(${hue + i * 40}, 100%, 50%, ${opacity})`;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            },
+
+            // 5. SPECTRUM-SPIRAL (новый)
+            5: function (hue, bassLevel, centerX, centerY) {
+                const segments = 128;
+                const maxRadius = 200 + bassLevel * 100;
+
+                ctx.beginPath();
+                for (let i = 0; i < segments; i++) {
+                    let angle = (i / segments) * Math.PI * 8 + Date.now() / 1000;
+                    let radius = (i / segments) * maxRadius + (dataArray[i % dataArray.length] * 0.5);
+                    let x = centerX + Math.cos(angle) * radius;
+                    let y = centerY + Math.sin(angle) * radius;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            },
+
+            // 6. ENERGY-ORBS (новый)
+            6: function (hue, bassLevel, centerX, centerY) {
+                const orbCount = 12;
+
+                for (let i = 0; i < orbCount; i++) {
+                    let angle = (i / orbCount) * Math.PI * 2 + Date.now() / 2000;
+                    let distance = 100 + dataArray[i * 4] * 0.8;
+                    let x = centerX + Math.cos(angle) * distance;
+                    let y = centerY + Math.sin(angle) * distance;
+                    let size = 20 + dataArray[i * 8] * 0.3;
+
+                    // Внешнее свечение
+                    let gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
+                    gradient.addColorStop(0, `hsla(${hue + i * 30}, 100%, 70%, 0.8)`);
+                    gradient.addColorStop(1, `hsla(${hue + i * 30}, 100%, 50%, 0)`);
+
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Внутреннее ядро
+                    ctx.fillStyle = `hsl(${hue + i * 30}, 100%, 90%)`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size * 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            },
+
+            // 7. NEON-BARS (новый)
+            7: function (hue, bassLevel, centerX, centerY) {
+                const barCount = 40;
+                const barWidth = canvas.width / barCount;
+
+                for (let i = 0; i < barCount; i++) {
+                    let dataIndex = Math.floor((i / barCount) * dataArray.length);
+                    let height = dataArray[dataIndex] * (canvas.height / 200);
+                    let x = i * barWidth;
+                    let y = canvas.height - height;
+
+                    // Градиент для неона
+                    let gradient = ctx.createLinearGradient(x, y, x, canvas.height);
+                    gradient.addColorStop(0, `hsl(${hue + i * 5}, 100%, 60%)`);
+                    gradient.addColorStop(1, `hsl(${hue + i * 5}, 100%, 30%)`);
+
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x + 1, y, barWidth - 2, height);
+
+                    // Неоновое свечение
+                    ctx.shadowColor = `hsl(${hue + i * 5}, 100%, 60%)`;
+                    ctx.shadowBlur = 15;
+                    ctx.fillRect(x + 1, y, barWidth - 2, height);
+                    ctx.shadowBlur = 0;
+                }
+            },
+
+            // 8. GEOMETRIC-BLOOM (новый)
+            8: function (hue, bassLevel, centerX, centerY) {
+                const sides = 6;
+                const baseRadius = 50 + bassLevel * 100;
+
+                for (let i = 0; i < sides; i++) {
+                    let points = [];
+                    for (let j = 0; j < sides; j++) {
+                        let angle = (j / sides) * Math.PI * 2 + (i * Math.PI / sides);
+                        let radius = baseRadius + dataArray[(i * sides + j) * 4] * 0.5;
+                        let x = centerX + Math.cos(angle) * radius;
+                        let y = centerY + Math.sin(angle) * radius;
+                        points.push({ x, y });
+                    }
+
+                    // Рисуем многоугольник
+                    ctx.beginPath();
+                    ctx.moveTo(points[0].x, points[0].y);
+                    for (let j = 1; j < points.length; j++) {
+                        ctx.lineTo(points[j].x, points[j].y);
+                    }
+                    ctx.closePath();
+
+                    // Градиентная заливка
+                    let gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, baseRadius * 2);
+                    gradient.addColorStop(0, `hsla(${hue + i * 60}, 100%, 50%, 0.3)`);
+                    gradient.addColorStop(1, `hsla(${hue + i * 60}, 100%, 50%, 0)`);
+
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    ctx.strokeStyle = `hsl(${hue + i * 60}, 100%, 70%)`;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            },
+
+            // 9. COSMIC-RAYS (новый)
+            9: function (hue, bassLevel, centerX, centerY) {
+                const rayCount = 24;
+                const maxLength = 400;
+
+                for (let i = 0; i < rayCount; i++) {
+                    let angle = (i / rayCount) * Math.PI * 2 + Date.now() / 5000;
+                    let length = 50 + (dataArray[i * 2] / 255) * maxLength;
+                    let x2 = centerX + Math.cos(angle) * length;
+                    let y2 = centerY + Math.sin(angle) * length;
+
+                    // Градиент для лучей
+                    let gradient = ctx.createLinearGradient(centerX, centerY, x2, y2);
+                    gradient.addColorStop(0, `hsla(${hue + i * 15}, 100%, 60%, 0.8)`);
+                    gradient.addColorStop(1, `hsla(${hue + i * 15}, 100%, 60%, 0)`);
+
+                    ctx.strokeStyle = gradient;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+
+                    // Концы лучей
+                    ctx.fillStyle = `hsl(${hue + i * 15}, 100%, 80%)`;
+                    ctx.beginPath();
+                    ctx.arc(x2, y2, 3 + bassLevel * 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            },
+
+            // 10. WAVE-SPHERE (новый)
+            10: function (hue, bassLevel, centerX, centerY) {
+                const layers = 16;
+                const baseRadius = 80;
+
+                for (let l = 0; l < layers; l++) {
+                    let radius = baseRadius + l * 15 + (dataArray[l * 4] * bassLevel);
+
+                    ctx.beginPath();
+                    for (let i = 0; i < 64; i++) {
+                        let angle = (i / 64) * Math.PI * 2;
+                        let wave = Math.sin(angle * 5 + Date.now() / 1000) * 10 * bassLevel;
+                        let x = centerX + Math.cos(angle) * (radius + wave);
+                        let y = centerY + Math.sin(angle) * (radius + wave);
+
+                        if (i === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                    ctx.closePath();
+
+                    ctx.strokeStyle = `hsla(${hue + l * 20}, 100%, 50%, ${0.1 + (l / layers) * 0.4})`;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+            },
+
+            // 11. DIGITAL-RAIN (новый) - матрица
+            11: function (hue, bassLevel, centerX, centerY) {
+                const charSize = 14;
+                const cols = Math.floor(canvas.width / charSize);
+
+                ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.1)`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.font = `${charSize}px monospace`;
+
+                for (let col = 0; col < cols; col++) {
+                    let dataIndex = Math.floor((col / cols) * dataArray.length);
+                    let intensity = dataArray[dataIndex] / 255;
+                    let charCount = Math.floor(10 + intensity * 20);
+
+                    for (let i = 0; i < charCount; i++) {
+                        let x = col * charSize;
+                        let y = (Date.now() / 50 + i * charSize * 2) % canvas.height;
+
+                        let opacity = 1 - (i / charCount);
+                        ctx.fillStyle = `hsla(${hue}, 100%, ${70 + intensity * 30}%, ${opacity})`;
+                        ctx.fillText(Math.random() > 0.5 ? '1' : '0', x, y);
+                    }
+                }
+            },
+
+            // 12. LIQUID-METAL (новый)
+            12: function (hue, bassLevel, centerX, centerY) {
+                const points = 64;
+                const baseRadius = 100;
+
+                ctx.beginPath();
+                for (let i = 0; i <= points; i++) {
+                    let angle = (i / points) * Math.PI * 2;
+                    let noise = Math.sin(angle * 3 + Date.now() / 800) * 20 * bassLevel;
+                    let radius = baseRadius + noise + (dataArray[i % dataArray.length] * 0.3);
+                    let x = centerX + Math.cos(angle) * radius;
+                    let y = centerY + Math.sin(angle) * radius;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.quadraticCurveTo(
+                            (x + centerX) / 2,
+                            (y + centerY) / 2,
+                            x, y
+                        );
+                    }
+                }
+
+                // Металлический градиент
+                let gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, baseRadius * 2);
+                gradient.addColorStop(0, `hsla(${hue}, 70%, 60%, 0.8)`);
+                gradient.addColorStop(0.5, `hsla(${hue + 30}, 50%, 40%, 0.5)`);
+                gradient.addColorStop(1, `hsla(${hue + 60}, 30%, 20%, 0.3)`);
+
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Блеск
+                ctx.strokeStyle = `hsla(${hue}, 100%, 80%, 0.6)`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            },
+
+            // 13. CYBER-CIRCUITS (новый)
+            13: function (hue, bassLevel, centerX, centerY) {
+                const gridSize = 40;
+                const cols = Math.floor(canvas.width / gridSize);
+                const rows = Math.floor(canvas.height / gridSize);
+
+                // Рисуем узлы
+                for (let col = 0; col < cols; col++) {
+                    for (let row = 0; row < rows; row++) {
+                        let x = col * gridSize;
+                        let y = row * gridSize;
+                        let dataIndex = (col * row) % dataArray.length;
+
+                        if (dataArray[dataIndex] > 128) {
+                            ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+                            ctx.beginPath();
+                            ctx.arc(x, y, 3 + bassLevel * 5, 0, Math.PI * 2);
+                            ctx.fill();
+
+                            // Соединяем узлы
+                            if (col < cols - 1 && row < rows - 1) {
+                                ctx.strokeStyle = `hsla(${hue}, 100%, 50%, ${dataArray[dataIndex] / 255})`;
+                                ctx.lineWidth = 1;
+                                ctx.beginPath();
+                                ctx.moveTo(x, y);
+                                ctx.lineTo(x + gridSize, y);
+                                ctx.lineTo(x + gridSize, y + gridSize);
+                                ctx.lineTo(x, y + gridSize);
+                                ctx.closePath();
+                                ctx.stroke();
+                            }
+                        }
+                    }
+                }
+            },
+
+            // 14. STARFIELD-SHOCK (новый)
+            14: function (hue, bassLevel, centerX, centerY) {
+                initParticles(300, 'starfield');
+
+                // Звездное поле
+                particles.forEach(p => {
+                    p.x += p.vx * bassLevel * 0.5;
+                    p.y += p.vy * bassLevel * 0.5;
+
+                    if (p.x < 0) p.x = canvas.width;
+                    if (p.x > canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = canvas.height;
+                    if (p.y > canvas.height) p.y = 0;
+
+                    // Ударные волны от центра при сильном басе
+                    if (bassLevel > 0.3) {
+                        let dx = p.x - centerX;
+                        let dy = p.y - centerY;
+                        let distance = Math.sqrt(dx * dx + dy * dy);
+                        let force = bassLevel * 50 / distance;
+
+                        p.vx += (dx / distance) * force;
+                        p.vy += (dy / distance) * force;
+                    }
+
+                    // Ограничение скорости
+                    p.vx *= 0.95;
+                    p.vy *= 0.95;
+
+                    ctx.fillStyle = `hsl(${hue}, 100%, ${70 + p.size * 5}%)`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * (1 + bassLevel), 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Центральная энергия
+                let gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 50 + bassLevel * 100);
+                gradient.addColorStop(0, `hsla(${hue}, 100%, 90%, 0.9)`);
+                gradient.addColorStop(1, `hsla(${hue}, 100%, 50%, 0)`);
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, 50 + bassLevel * 100, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        };
+
+        // --- ЛОГИКА СЛУЧАЙНОЙ СМЕНЫ ---
+        function changeVisualMode() {
+            let nextMode;
+            do {
+                nextMode = Math.floor(Math.random() * modeNames.length);
+            } while (nextMode === visualMode);
+
+            visualMode = nextMode;
+            modeInfo.innerText = "MODE: " + modeNames[visualMode];
+        }
+
+        function autoSwitch() {
+            if (isPlaying) {
+                changeVisualMode();
+                let nextDelay = 8000 + Math.random() * 7000;
+                setTimeout(autoSwitch, nextDelay);
+            }
+        }
+
+        nextBtn.addEventListener('click', () => {
+            if (isPlaying) changeVisualMode();
+        });
+
+        stationSelect.addEventListener('change', () => {
+            document.getElementById('animated-text').innerText = document.querySelector('#stationSelect option:checked').textContent;
+            audio.src = stationSelect.value;
+            audio.play().then(() => {
+                audioCtx.resume();
+                startBtn.innerText = "ПАУЗА";
+                isPlaying = true;
+                autoSwitch();
+                draw();
+            });
+        });
+
+        startBtn.addEventListener('click', async () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                audio = new Audio();
+                audio.crossOrigin = "anonymous";
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 512;
+                const source = audioCtx.createMediaElementSource(audio);
+                source.connect(analyser);
+                analyser.connect(audioCtx.destination);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+            }
+
+            if (isPlaying) {
+                audio.pause();
+                startBtn.innerText = "ЗАПУСК";
+                isPlaying = false;
+            } else {
+                document.getElementById('animated-text').innerText = document.querySelector('#stationSelect option:checked').textContent;
+                audio.src = stationSelect.value;
+                audio.play().then(() => {
+                    audioCtx.resume();
+                    startBtn.innerText = "ПАУЗА";
+                    isPlaying = true;
+                    autoSwitch();
+                    draw();
+                });
+            }
+        });
+
+        function draw() {
+            if (!isPlaying) return;
+            requestAnimationFrame(draw);
+            analyser.getByteFrequencyData(dataArray);
+
+            let bass = dataArray[0] + dataArray[1] + dataArray[2];
+            let bassLevel = bass / 765;
+            const hue = (Date.now() / 50) % 360;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            document.documentElement.style.setProperty('--accent', `hsl(${hue}, 100%, 50%)`);
+            bgLayer.style.transform = `scale(${1.1 + bassLevel * 0.2})`;
+
+            // Шлейф эффекта
+            ctx.fillStyle = "rgba(0, 0, 0, 0.10)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Вызов текущей визуализации
+            if (visualEffects[visualMode]) {
+                visualEffects[visualMode](hue, bassLevel, centerX, centerY);
+            } else {
+                // Fallback режим
+                let barW = canvas.width / 32;
+                for (let i = 0; i < 32; i++) {
+                    ctx.fillStyle = `hsl(${hue + i * 10}, 100%, 50%)`;
+                    let h = dataArray[i * 4] * 2.2;
+                    ctx.fillRect(i * barW, canvas.height, barW - 2, -h);
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
