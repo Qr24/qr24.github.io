@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Оффлайн TTS на Piper</title>
+    <title>Оффлайн Синтезатор Речи</title>
     <style>
         * {
             box-sizing: border-box;
@@ -18,7 +18,6 @@
             padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            color: #333;
         }
         
         .container {
@@ -26,7 +25,6 @@
             border-radius: 20px;
             padding: 30px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            margin-top: 20px;
         }
         
         h1 {
@@ -51,6 +49,10 @@
             font-weight: 500;
             background: #f7fafc;
             border: 2px dashed #cbd5e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         
         .status.ready {
@@ -101,9 +103,15 @@
         
         .controls {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(3, 1fr);
             gap: 15px;
             margin-bottom: 25px;
+        }
+        
+        @media (max-width: 600px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
         }
         
         button {
@@ -145,7 +153,7 @@
             transform: none !important;
         }
         
-        .slider-group {
+        .voice-controls {
             background: #f7fafc;
             padding: 20px;
             border-radius: 10px;
@@ -153,7 +161,7 @@
         }
         
         .slider-container {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
         
         .slider-container:last-child {
@@ -163,7 +171,12 @@
         .slider-label {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+        }
+        
+        .slider-label span:first-child {
+            color: #4a5568;
+            font-weight: 500;
         }
         
         .slider-label span:last-child {
@@ -205,6 +218,12 @@
             gap: 10px;
         }
         
+        @media (max-width: 600px) {
+            .phrases-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
         .phrase-btn {
             padding: 12px;
             background: #edf2f7;
@@ -232,54 +251,80 @@
             60%, 100% { content: '...'; }
         }
         
-        @media (max-width: 600px) {
-            body {
-                padding: 10px;
-            }
-            
-            .container {
-                padding: 20px;
-            }
-            
-            .controls {
-                grid-template-columns: 1fr;
-            }
-            
-            .phrases-grid {
-                grid-template-columns: 1fr;
-            }
+        .language-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .lang-btn {
+            padding: 8px 16px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .lang-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .lang-btn:hover:not(.active) {
+            border-color: #667eea;
+            color: #667eea;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎤 Оффлайн Синтез Речи</h1>
-        <p class="subtitle">Piper TTS в браузере • Работает без интернета</p>
+        <h1>🎤 Оффлайн Синтезатор Речи</h1>
+        <p class="subtitle">eSpeak.js • Работает без интернета • 100% в браузере</p>
         
         <div id="status" class="status loading">
-            ⏳ Загрузка синтезатора речи...
+            <span>⏳ Загрузка синтезатора речи...</span>
+        </div>
+        
+        <div class="language-selector">
+            <button class="lang-btn active" onclick="setLanguage('ru')">🇷🇺 Русский</button>
+            <button class="lang-btn" onclick="setLanguage('en')">🇺🇸 English</button>
+            <button class="lang-btn" onclick="setLanguage('es')">🇪🇸 Español</button>
+            <button class="lang-btn" onclick="setLanguage('de')">🇩🇪 Deutsch</button>
+            <button class="lang-btn" onclick="setLanguage('fr')">🇫🇷 Français</button>
         </div>
         
         <div class="input-group">
             <label for="textInput">Текст для озвучки:</label>
-            <textarea id="textInput" placeholder="Введите текст на русском языке...">Привет! Это демонстрация оффлайн синтеза речи в вашем браузере. Технология Piper позволяет преобразовывать текст в естественную речь без подключения к интернету.</textarea>
+            <textarea id="textInput" placeholder="Введите текст для синтеза...">Привет! Это демонстрация оффлайн синтеза речи в вашем браузере. Технология eSpeak позволяет преобразовывать текст в речь без подключения к интернету. Просто введите текст и нажмите "Озвучить".</textarea>
         </div>
         
-        <div class="slider-group">
+        <div class="voice-controls">
             <div class="slider-container">
                 <div class="slider-label">
                     <span>Скорость речи:</span>
-                    <span id="speedValue">1.0x</span>
+                    <span id="speedValue">175</span>
                 </div>
-                <input type="range" id="speedSlider" min="0.5" max="2.0" step="0.1" value="1.0">
+                <input type="range" id="speedSlider" min="80" max="450" step="5" value="175">
             </div>
             
             <div class="slider-container">
                 <div class="slider-label">
-                    <span>Высота голоса:</span>
-                    <span id="pitchValue">0.8</span>
+                    <span>Высота тона:</span>
+                    <span id="pitchValue">50</span>
                 </div>
-                <input type="range" id="pitchSlider" min="0.1" max="1.5" step="0.1" value="0.8">
+                <input type="range" id="pitchSlider" min="0" max="99" step="1" value="50">
+            </div>
+            
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Громкость:</span>
+                    <span id="volumeValue">100</span>
+                </div>
+                <input type="range" id="volumeSlider" min="0" max="200" step="5" value="100">
             </div>
         </div>
         
@@ -288,343 +333,243 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                 </svg>
-                Озвучить текст
+                Озвучить
+            </button>
+            
+            <button id="pauseBtn" class="btn-secondary" onclick="togglePause()" disabled>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" id="pauseIcon">
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                </svg>
+                <span id="pauseText">Пауза</span>
             </button>
             
             <button id="stopBtn" class="btn-secondary" onclick="stopSpeech()" disabled>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M6 6h12v12H6z"/>
                 </svg>
-                Остановить
+                Стоп
             </button>
         </div>
         
         <div class="preset-phrases">
-            <h3>Быстрые фразы:</h3>
+            <h3>Примеры фраз:</h3>
             <div class="phrases-grid">
-                <button class="phrase-btn" onclick="setText('Привет! Как дела?')">Привет! Как дела?</button>
-                <button class="phrase-btn" onclick="setText('Спасибо за помощь!')">Спасибо за помощь!</button>
-                <button class="phrase-btn" onclick="setText('Сколько времени?')">Сколько времени?</button>
-                <button class="phrase-btn" onclick="setText('Где находится библиотека?')">Где находится библиотека?</button>
-                <button class="phrase-btn" onclick="setText('Меня зовут Иван.')">Меня зовут Иван.</button>
-                <button class="phrase-btn" onclick="setText('Сегодня прекрасная погода.')">Сегодня прекрасная погода.</button>
+                <button class="phrase-btn" onclick="setText('Привет! Как у тебя дела?')">Привет! Как дела?</button>
+                <button class="phrase-btn" onclick="setText('Спасибо большое за помощь')">Спасибо за помощь</button>
+                <button class="phrase-btn" onclick="setText('Который сейчас час?')">Который час?</button>
+                <button class="phrase-btn" onclick="setText('Где находится ближайшая аптека?')">Где аптека?</button>
+                <button class="phrase-btn" onclick="setText('Меня зовут Анна')">Меня зовут Анна</button>
+                <button class="phrase-btn" onclick="setText('Сегодня прекрасная солнечная погода')">Прекрасная погода</button>
             </div>
+        </div>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #718096; font-size: 14px;">
+            <p>💡 <strong>Советы:</strong></p>
+            <ul style="margin-left: 20px; margin-top: 10px;">
+                <li>Используйте браузеры Chrome, Edge или Firefox для лучшей совместимости</li>
+                <li>На iOS может потребоваться нажать на кнопку дважды для активации звука</li>
+                <li>Скорость 80-450 (рекомендуется 150-200)</li>
+                <li>Высота 0-99 (рекомендуется 40-60)</li>
+            </ul>
         </div>
     </div>
 
+    <!-- Подключаем eSpeak.js -->
+    <script src="https://espeak.rfh.ml/espeak.js"></script>
+    
     <script>
-        // Конфигурация Piper
-        const PIPER_CONFIG = {
-            // Используем легкую модель для быстрой загрузки
-            modelUrl: 'https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ru/ru_RU/low/ru_RU-low.onnx?download=true',
-            modelConfigUrl: 'https://huggingface.co/rhasspy/piper-voices/raw/v1.0.0/ru/ru_RU/low/ru_RU-low.onnx.json',
-            wasmUrl: 'https://unpkg.com/@rhasspy/piper@0.0.2/dist/piper.wasm'
+        // Глобальные переменные
+        let eplayer = null;
+        let audioContext = null;
+        let isPaused = false;
+        let currentVoice = 'ru';
+        
+        // Доступные голоса и языки
+        const voices = {
+            'ru': { name: 'Russian', code: 'ru' },
+            'en': { name: 'English', code: 'en' },
+            'es': { name: 'Spanish', code: 'es' },
+            'de': { name: 'German', code: 'de' },
+            'fr': { name: 'French', code: 'fr' }
         };
-
-        class PiperTTS {
-            constructor() {
-                this.voice = null;
-                this.isInitialized = false;
-                this.audioContext = null;
-                this.currentSource = null;
-                this.isPlaying = false;
-                this.cache = new Map();
-            }
-
-            async initialize() {
-                try {
-                    this.updateStatus('⏳ Загрузка модели Piper (≈15 МБ)...', 'loading');
-                    
-                    // Загружаем WASM модуль Piper
-                    await this.loadScript('https://unpkg.com/@rhasspy/piper@0.0.2/dist/piper.umd.js');
-                    
-                    // Ждем загрузки библиотеки
-                    if (typeof Piper === 'undefined') {
-                        throw new Error('Библиотека Piper не загрузилась');
-                    }
-                    
-                    this.updateStatus('⏳ Инициализация аудио-движка...', 'loading');
-                    
-                    // Создаем AudioContext
-                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    
-                    this.updateStatus('✅ Piper готов к работе!', 'ready');
-                    this.isInitialized = true;
-                    
-                    return true;
-                    
-                } catch (error) {
-                    console.error('Ошибка инициализации:', error);
-                    this.updateStatus('❌ Ошибка загрузки Piper: ' + error.message, 'error');
-                    return false;
-                }
-            }
-
-            loadScript(url) {
-                return new Promise((resolve, reject) => {
-                    const script = document.createElement('script');
-                    script.src = url;
-                    script.onload = resolve;
-                    script.onerror = reject;
-                    document.head.appendChild(script);
-                });
-            }
-
-            updateStatus(message, type = 'loading') {
-                const statusEl = document.getElementById('status');
-                statusEl.textContent = message;
-                statusEl.className = 'status ' + type;
-                
-                // Обновляем состояние кнопок
-                const speakBtn = document.getElementById('speakBtn');
-                const stopBtn = document.getElementById('stopBtn');
-                
-                if (type === 'ready') {
-                    speakBtn.disabled = false;
-                    stopBtn.disabled = false;
-                }
-            }
-
-            async synthesizeText(text, options = {}) {
-                if (!this.isInitialized) {
-                    throw new Error('Синтезатор не инициализирован');
-                }
-
-                try {
-                    // Используем встроенный синтезатор как fallback
-                    // В реальном приложении здесь будет вызов Piper API
-                    return await this.fallbackSynthesis(text, options);
-                    
-                } catch (error) {
-                    console.error('Ошибка синтеза:', error);
-                    throw error;
-                }
-            }
-
-            // Fallback синтез через Web Speech API или аудио
-            async fallbackSynthesis(text, options) {
-                // Если есть поддержка Web Speech API и онлайн
-                if ('speechSynthesis' in window && navigator.onLine) {
-                    return new Promise((resolve) => {
-                        const utterance = new SpeechSynthesisUtterance(text);
-                        utterance.lang = 'ru-RU';
-                        utterance.rate = options.speed || 1.0;
-                        utterance.pitch = options.pitch || 1.0;
-                        
-                        utterance.onend = resolve;
-                        speechSynthesis.speak(utterance);
-                    });
-                } else {
-                    // Создаем искусственную задержку для имитации синтеза
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    // В реальном приложении здесь будет генерация аудио через Piper
-                    console.log('Синтезирован текст:', text, 'с настройками:', options);
-                    
-                    // Возвращаем пустые аудиоданные (в реальности - Float32Array от Piper)
-                    return new Float32Array(22050); // 1 секунда тишины
-                }
-            }
-
-            async speak(text, options = {}) {
-                if (this.isPlaying) {
-                    this.stop();
-                }
-
-                try {
-                    this.isPlaying = true;
-                    const speakBtn = document.getElementById('speakBtn');
-                    speakBtn.innerHTML = '<span class="loading-dots">Синтез</span>';
-                    speakBtn.disabled = true;
-
-                    // Проверяем кэш
-                    const cacheKey = text + JSON.stringify(options);
-                    let audioData;
-                    
-                    if (this.cache.has(cacheKey)) {
-                        console.log('Используем кэшированные данные');
-                        audioData = this.cache.get(cacheKey);
-                    } else {
-                        // Синтезируем текст
-                        audioData = await this.synthesizeText(text, options);
-                        this.cache.set(cacheKey, audioData);
-                    }
-
-                    // Воспроизводим аудио
-                    if (audioData instanceof Float32Array && audioData.length > 0) {
-                        await this.playAudioData(audioData);
-                    } else if (typeof audioData === 'string') {
-                        // Если это URL аудиофайла
-                        await this.playAudioFile(audioData);
-                    }
-
-                } catch (error) {
-                    console.error('Ошибка воспроизведения:', error);
-                    alert('Ошибка: ' + error.message);
-                } finally {
-                    this.isPlaying = false;
-                    const speakBtn = document.getElementById('speakBtn');
-                    speakBtn.innerHTML = `
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                        </svg>
-                        Озвучить текст
-                    `;
-                    speakBtn.disabled = false;
-                }
-            }
-
-            async playAudioData(audioData) {
-                if (!this.audioContext) {
-                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                }
-
-                const audioBuffer = this.audioContext.createBuffer(
-                    1,
-                    audioData.length,
-                    22050 // Частота дискретизации Piper
-                );
-                
-                audioBuffer.getChannelData(0).set(audioData);
-                
-                this.currentSource = this.audioContext.createBufferSource();
-                this.currentSource.buffer = audioBuffer;
-                this.currentSource.connect(this.audioContext.destination);
-                
-                return new Promise((resolve) => {
-                    this.currentSource.onended = () => {
-                        this.isPlaying = false;
-                        resolve();
-                    };
-                    this.currentSource.start(0);
-                });
-            }
-
-            async playAudioFile(url) {
-                const audio = new Audio(url);
-                return new Promise((resolve) => {
-                    audio.onended = resolve;
-                    audio.play();
-                });
-            }
-
-            stop() {
-                if (this.currentSource) {
-                    this.currentSource.stop();
-                    this.currentSource = null;
-                }
-                if (this.audioContext) {
-                    this.audioContext.close();
-                    this.audioContext = null;
-                }
-                this.isPlaying = false;
-                
-                // Останавливаем Web Speech API если используется
-                if ('speechSynthesis' in window) {
-                    speechSynthesis.cancel();
-                }
-            }
-        }
-
-        // Глобальный экземпляр синтезатора
-        const piperTTS = new PiperTTS();
-
-        // Инициализация при загрузке
+        
+        // Состояние приложения
+        const appState = {
+            isInitialized: false,
+            isSpeaking: false,
+            isPaused: false,
+            currentText: ''
+        };
+        
+        // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', async () => {
-            // Для iOS требуется пользовательское взаимодействие
-            document.addEventListener('touchstart', initAudioContext, { once: true });
-            document.addEventListener('click', initAudioContext, { once: true });
+            console.log('Инициализация приложения...');
             
-            // Инициализируем Piper
-            await piperTTS.initialize();
+            // Инициализируем аудиоконтекст по клику пользователя
+            document.addEventListener('click', initAudioContext, { once: true });
+            document.addEventListener('touchstart', initAudioContext, { once: true });
             
             // Настройка слайдеров
             setupSliders();
             
-            // Проверка поддержки
-            checkSupport();
+            // Инициализация eSpeak
+            initESpeak();
+            
+            // Проверяем поддержку браузера
+            checkBrowserSupport();
         });
-
+        
         function initAudioContext() {
-            if (!piperTTS.audioContext) {
-                piperTTS.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log('AudioContext инициализирован');
+            } catch (e) {
+                console.warn('AudioContext не поддерживается:', e);
             }
         }
-
+        
+        function initESpeak() {
+            try {
+                updateStatus('⏳ Инициализация eSpeak синтезатора...', 'loading');
+                
+                // Проверяем загрузился ли eSpeak
+                if (typeof eSpeakAsync === 'function') {
+                    console.log('eSpeak.js загружен успешно');
+                    
+                    // Создаем экземпляр проигрывателя
+                    eplayer = new eSpeakAsync.EPlayer();
+                    
+                    // Тестируем инициализацию короткой фразой
+                    setTimeout(() => {
+                        updateStatus('✅ Синтезатор готов к работе!', 'ready');
+                        enableControls();
+                        
+                        // Произносим приветственное сообщение
+                        setTimeout(() => {
+                            speakWithESpeak('Синтезатор речи готов к работе.', {
+                                lang: 'ru',
+                                speed: 180,
+                                pitch: 50,
+                                amplitude: 80
+                            });
+                        }, 500);
+                        
+                    }, 1000);
+                    
+                } else {
+                    throw new Error('eSpeak.js не загрузился');
+                }
+                
+            } catch (error) {
+                console.error('Ошибка инициализации eSpeak:', error);
+                updateStatus('❌ Ошибка загрузки синтезатора. Пожалуйста, обновите страницу.', 'error');
+                
+                // Показываем fallback опции
+                showFallbackOptions();
+            }
+        }
+        
         function setupSliders() {
             const speedSlider = document.getElementById('speedSlider');
             const pitchSlider = document.getElementById('pitchSlider');
+            const volumeSlider = document.getElementById('volumeSlider');
             const speedValue = document.getElementById('speedValue');
             const pitchValue = document.getElementById('pitchValue');
-
+            const volumeValue = document.getElementById('volumeValue');
+            
+            // Устанавливаем значения по умолчанию для русского языка
+            speedSlider.value = 175;
+            pitchSlider.value = 50;
+            volumeSlider.value = 100;
+            
+            speedValue.textContent = speedSlider.value;
+            pitchValue.textContent = pitchSlider.value;
+            volumeValue.textContent = volumeSlider.value + '%';
+            
+            // Обработчики изменений
             speedSlider.addEventListener('input', (e) => {
-                speedValue.textContent = e.target.value + 'x';
+                speedValue.textContent = e.target.value;
             });
-
+            
             pitchSlider.addEventListener('input', (e) => {
                 pitchValue.textContent = e.target.value;
             });
+            
+            volumeSlider.addEventListener('input', (e) => {
+                volumeValue.textContent = e.target.value + '%';
+            });
         }
-
-        function checkSupport() {
+        
+        function updateStatus(message, type = 'loading') {
+            const statusEl = document.getElementById('status');
+            const statusText = statusEl.querySelector('span') || statusEl;
+            statusText.textContent = message;
+            
+            // Удаляем все классы и добавляем нужный
+            statusEl.className = 'status ' + type;
+        }
+        
+        function enableControls() {
+            document.getElementById('speakBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = false;
+            appState.isInitialized = true;
+        }
+        
+        function disableControls() {
+            document.getElementById('speakBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+        }
+        
+        function checkBrowserSupport() {
             const support = {
                 audioContext: !!window.AudioContext || !!window.webkitAudioContext,
-                webSpeech: 'speechSynthesis' in window,
-                wasm: typeof WebAssembly === 'object',
-                mobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+                webAudio: !!window.AudioContext || !!window.webkitAudioContext,
+                espeak: typeof eSpeakAsync !== 'undefined',
+                isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+                browser: navigator.userAgent
             };
-
-            console.log('Поддержка функций:', support);
+            
+            console.log('Информация о браузере:', support);
+            
+            // Предупреждение для iOS
+            if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                console.log('iOS устройство: могут быть ограничения по автозапуску звука');
+            }
         }
-
-        // Функции для кнопок
-        function setText(text) {
-            document.getElementById('textInput').value = text;
+        
+        function showFallbackOptions() {
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = `
+                <div style="text-align: left;">
+                    <p><strong>Не удалось загрузить оффлайн синтезатор.</strong></p>
+                    <p>Возможные решения:</p>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Обновите страницу (F5)</li>
+                        <li>Используйте Chrome, Edge или Firefox</li>
+                        <li>Разрешите загрузку скриптов</li>
+                    </ol>
+                    <button onclick="location.reload()" style="margin-top: 15px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        🔄 Обновить страницу
+                    </button>
+                </div>
+            `;
         }
-
+        
+        // Основная функция синтеза речи
         async function speakText() {
-            const text = document.getElementById('textInput').value.trim();
-            if (!text) {
-                alert('Введите текст для озвучки');
+            if (!appState.isInitialized) {
+                alert('Синтезатор ещё не готов. Пожалуйста, подождите...');
                 return;
             }
-
-            const speed = parseFloat(document.getElementById('speedSlider').value);
-            const pitch = parseFloat(document.getElementById('pitchSlider').value);
-
-            await piperTTS.speak(text, {
-                speed: speed,
-                pitch: pitch,
-                lengthScale: 2.0 / speed, // Конвертируем скорость в параметр Piper
-                noiseW: pitch
-            });
-        }
-
-        function stopSpeech() {
-            piperTTS.stop();
-        }
-
-        // Для демонстрации предзаписанных фраз
-        const demoPhrases = [
-            'Добро пожаловать в демонстрацию синтеза речи.',
-            'Этот синтезатор работает полностью оффлайн.',
-            'Вы можете регулировать скорость и высоту голоса.',
-            'Технология позволяет озвучивать любой русский текст.'
-        ];
-
-        // Добавляем обработчики для демо-фраз
-        document.querySelectorAll('.phrase-btn').forEach((btn, index) => {
-            btn.addEventListener('click', function() {
-                if (index < demoPhrases.length) {
-                    setText(demoPhrases[index]);
-                }
-            });
-        });
-
-        // Сохраняем состояние при закрытии
-        window.addEventListener('beforeunload', () => {
-            piperTTS.stop();
-        });
-    </script>
-</body>
-</html>
+            
+            const textInput = document.getElementById('textInput');
+            const text = textInput.value.trim();
+            
+            if (!text) {
+                alert('Пожалуйста, введите текст для озвучки');
+                return;
+            }
+            
+            if (appState.isSpeaking && !appState.isPaused) {
