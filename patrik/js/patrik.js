@@ -38,7 +38,12 @@ const INSTANT_COMMANDS = {
     'тише': 'vol_down',
     'потише': 'vol_down',
     'громче': 'vol_up',
-    'погромче': 'vol_up'
+    'погромче': 'vol_up',
+    // новые команды
+    'привет': 'hello',
+    'здравствуй': 'hello',
+    'здорова': 'hello'
+    
 };
 
 
@@ -570,6 +575,15 @@ function executeInstantAction(action, triggerWord) {
 
     // Логика быстрых команд
     switch (action) {
+      case 'hello':
+            log(`Привет! Текущая громкость: ${Math.round(userRadioVolume * 100)}%`, 'sys');
+            break;
+        case 'currentTime':
+          let Data = new Date();
+          let Hour = Data.getHours();
+          let Minutes = Data.getMinutes();
+          log(`Сейчас: `+Hour+` `+Minutes,'sys');
+          break;
         case 'next':
             playRadio('next');
             break;
