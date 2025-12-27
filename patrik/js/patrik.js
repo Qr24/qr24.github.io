@@ -42,7 +42,10 @@ const INSTANT_COMMANDS = {
     // новые команды
     'привет': 'hello',
     'здравствуй': 'hello',
-    'здорова': 'hello'
+    'здорова': 'hello',
+    'время': 'currentTime',
+    'сколько время': 'currentTime',
+    'который час': 'currentTime'
     
 };
 
