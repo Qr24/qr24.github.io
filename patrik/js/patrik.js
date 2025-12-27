@@ -42,10 +42,9 @@ const INSTANT_COMMANDS = {
     // новые команды
     'привет': 'hello',
     'здравствуй': 'hello',
-    'здорова': 'hello',
-    'время': 'currentTime',
-    'сколько время': 'currentTime',
-    'который час': 'currentTime'
+    'время': 'getTime',
+    'сколько время': 'getTime',
+    'который час': 'getTime'
     
 };
 
@@ -581,11 +580,11 @@ function executeInstantAction(action, triggerWord) {
       case 'hello':
             log(`Привет! Текущая громкость: ${Math.round(userRadioVolume * 100)}%`, 'sys');
             break;
-        case 'currentTime':
+        case 'getTime':
           let Data = new Date();
           let Hour = Data.getHours();
           let Minutes = Data.getMinutes();
-          log(`Сейчас: `+Hour+` `+Minutes,'sys');
+          log(`Сейчас: `+Hour+`:`+Minutes,'sys');
           break;
         case 'next':
             playRadio('next');
